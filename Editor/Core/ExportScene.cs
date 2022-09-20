@@ -95,25 +95,28 @@ public class ExportScene : EditorWindow
         {
 
             case State.INITIAL:
-                    PipelineSettings.ExportLights = EditorGUILayout.Toggle("Lights", PipelineSettings.ExportLights);
-                    PipelineSettings.ExportColliders = EditorGUILayout.Toggle("Colliders", PipelineSettings.ExportColliders);
-                    PipelineSettings.ExportSkybox = EditorGUILayout.Toggle("Skybox", PipelineSettings.ExportSkybox);
-                    //PipelineSettings.ExportEnvmap = EditorGUILayout.Toggle("Envmap", PipelineSettings.ExportEnvmap);
-                    GUILayout.Space(8);
-                    PipelineSettings.meshMode = (MeshExportMode)EditorGUILayout.EnumPopup("Mesh Export Options", PipelineSettings.meshMode);
-                    PipelineSettings.lightmapMode = (LightmapMode)EditorGUILayout.EnumPopup("Lightmap Mode", PipelineSettings.lightmapMode);
-                    // Add a label to indication that the BAKE_SEPARATE lightmap mode will export MOZ_lightmap extension
-                    if (PipelineSettings.lightmapMode != LightmapMode.BAKE_SEPARATE)
-                    {
-                        EditorGUILayout.HelpBox("The MOZ_lightmap extension is only supported with BAKE_SEPARATE", MessageType.Info);
-                    }
-                    GUILayout.Space(8);
-                    PipelineSettings.CombinedTextureResolution = EditorGUILayout.IntField("Max Texture Resolution", PipelineSettings.CombinedTextureResolution);
+                PipelineSettings.ExportLights = EditorGUILayout.Toggle("Lights", PipelineSettings.ExportLights);
+                GUI.enabled = false;
+                EditorGUILayout.LabelField("*Coming soon :)", WEBAGuiStyles.CustomColorLabel(false,true,true,Color.yellow));
+                PipelineSettings.ExportColliders = EditorGUILayout.Toggle("Colliders", PipelineSettings.ExportColliders);
+                PipelineSettings.ExportSkybox = EditorGUILayout.Toggle("Skybox", PipelineSettings.ExportSkybox);
+                PipelineSettings.ExportEnvmap = EditorGUILayout.Toggle("Envmap", PipelineSettings.ExportEnvmap);
+                GUI.enabled = true;
+                GUILayout.Space(8);
+                PipelineSettings.meshMode = (MeshExportMode)EditorGUILayout.EnumPopup("Mesh Export Options", PipelineSettings.meshMode);
+                PipelineSettings.lightmapMode = (LightmapMode)EditorGUILayout.EnumPopup("Lightmap Mode", PipelineSettings.lightmapMode);
+                // Add a label to indication that the BAKE_SEPARATE lightmap mode will export MOZ_lightmap extension
+                if (PipelineSettings.lightmapMode != LightmapMode.BAKE_SEPARATE)
+                {
+                    EditorGUILayout.HelpBox("The MOZ_lightmap extension is only supported with BAKE_SEPARATE", MessageType.Info);
+                }
+                GUILayout.Space(8);
+                PipelineSettings.CombinedTextureResolution = EditorGUILayout.IntField("Max Texture Resolution", PipelineSettings.CombinedTextureResolution);
                 
                 
                 GUILayout.Space(16);
-
-                showOptimization = EditorGUILayout.Foldout(showOptimization, "GLTF Optimization");
+                showOptimization = false;
+                //showOptimization = EditorGUILayout.Foldout(showOptimization, "GLTF Optimization");
                 //
                 if (showOptimization)
                 {
@@ -135,9 +138,9 @@ public class ExportScene : EditorWindow
                     GUILayout.Space(16);
                 }
 
-                showAdvancedOptions = EditorGUILayout.Foldout(showAdvancedOptions, "Advanced Tools");
-
-                if(showAdvancedOptions)
+                showAdvancedOptions = false;
+                //showAdvancedOptions = EditorGUILayout.Foldout(showAdvancedOptions, "Advanced Tools");
+                if (showAdvancedOptions)
                 {
 
                     savePersistentSelected = GUILayout.Toggle(savePersistentSelected, "Serialize into Persistent Assets (Are not deleted after export)");
