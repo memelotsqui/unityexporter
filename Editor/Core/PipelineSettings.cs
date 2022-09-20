@@ -125,6 +125,7 @@ public static class PipelineSettings
             return _configBasePath + EditorSceneManager.GetActiveScene().name + ".conf";
         }
     }
+    public static readonly string BuiltinAssetsFolder = "/Webaverse/Builtin/";
     public static readonly string PipelineAssetsFolder = Application.dataPath + "/Webaverse/PipelineAssets/";
     public static readonly string PipelinePersistentFolder = Application.dataPath + "/Webaverse/PersistentAssets/";
     public static string GLTFName;
@@ -200,6 +201,13 @@ public static class PipelineSettings
         CreateMissingDirectories();
         File.WriteAllText(ConfigFile, JsonConvert.SerializeObject(data, Formatting.Indented));
     }
+    public static void CreateBuiltinFolder()
+    {
+        if (!Directory.Exists(Application.dataPath + BuiltinAssetsFolder))
+        {
+            Directory.CreateDirectory(Application.dataPath + BuiltinAssetsFolder);
+        }
+    } 
     public static void CreateMissingDirectories()
     {
         DirectoryInfo pipelineDirectory = new DirectoryInfo(PipelineFolder);

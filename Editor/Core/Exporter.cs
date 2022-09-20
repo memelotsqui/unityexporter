@@ -19,12 +19,11 @@ public class Exporter
         _export = new EditorExporter();
     }
 
-    public void Export()
+    public void Export(bool fullScene = true)
     {
         List<ExporterEntry> entries = new List<ExporterEntry>();
         Transform[] transforms = Selection.GetTransforms(SelectionMode.TopLevel);
-
-        if (transforms.Length == 0)
+        if (fullScene)
         {
             var scene = SceneManager.GetActiveScene();
             List<GameObject> rootObjects = new List<GameObject>();

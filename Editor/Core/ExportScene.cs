@@ -134,24 +134,15 @@ public class ExportScene : EditorWindow
                     PipelineSettings.BasicGLTFConvert = EditorGUILayout.Toggle("Use Basic GLTF Converter", PipelineSettings.BasicGLTFConvert);
                     GUILayout.Space(16);
                 }
-                
-                if (GUILayout.Button("Save Settings as Default"))
-                {
-                    PipelineSettings.SaveSettings();
-                }
-                GUILayout.Space(32);
-                if (GUILayout.Button("Refresh Settings"))
-                {
-                    PipelineSettings.ReadSettingsFromConfig();
-                }
-                GUILayout.Space(16);
 
                 showAdvancedOptions = EditorGUILayout.Foldout(showAdvancedOptions, "Advanced Tools");
 
                 if(showAdvancedOptions)
                 {
+
                     savePersistentSelected = GUILayout.Toggle(savePersistentSelected, "Serialize into Persistent Assets (Are not deleted after export)");
-                    if(GUILayout.Button("Serialize Selected Assets"))
+                    
+                    if (GUILayout.Button("Serialize Selected Assets"))
                     {
                         SerializeSelectedAssets(savePersistentSelected);
                     }
@@ -218,38 +209,67 @@ public class ExportScene : EditorWindow
                             }
                         }
                     }
-                    
+
+                    doDebug = EditorGUILayout.Toggle("Debug Execution", doDebug);
+
                     GUILayout.EndVertical();
                 }
                 GUILayout.Space(8);
                 // Create a Name TextField with a default value of "scene"
-                PipelineSettings.GLTFName = EditorGUILayout.TextField("Name:", String.IsNullOrEmpty(PipelineSettings.GLTFName) ? "scene" : PipelineSettings.GLTFName, GUILayout.ExpandWidth(true));
-                
+                EditorGUILayout.BeginHorizontal();
+                EditorGUILayout.LabelField("Name: ", WEBAGuiStyles.CustomLabel(false, true, false), GUILayout.Width(80f));
+                PipelineSettings.GLTFName = EditorGUILayout.TextField(String.IsNullOrEmpty(PipelineSettings.GLTFName) ? "scene" : PipelineSettings.GLTFName, GUILayout.ExpandWidth(true));
+                EditorGUILayout.EndHorizontal();
 
+                GUILayout.Space(5);
+
+                if (PipelineSettings.ProjectFolder != "")
+                {
+                    EditorGUILayout.BeginHorizontal();
+                    EditorGUILayout.LabelField("Export To: ", WEBAGuiStyles.CustomLabel(false, true, false), GUILayout.Width(80f));
+                    EditorGUILayout.LabelField(PipelineSettings.ProjectFolder,WEBAGuiStyles.CustomLabel(false,false,true));
+                    EditorGUILayout.EndHorizontal();
+                }
+                GUILayout.Space(8);
                 if (GUILayout.Button("Set Output Directory", GUILayout.Height(30f)))
                 {
                     string dir = EditorUtility.SaveFolderPanel("Output Directory", PipelineSettings.ProjectFolder, "");
                     if (dir != "")
                         PipelineSettings.ProjectFolder = dir;
                 }
-                if (PipelineSettings.ProjectFolder != "")
-                {
-                    EditorGUILayout.LabelField("Project Folder: " + PipelineSettings.ProjectFolder);
-                }
                 GUILayout.Space(8);
+
 
                 if (PipelineSettings.ProjectFolder != null)
                 {
-                    doDebug = EditorGUILayout.Toggle("Debug Execution", doDebug);
-
-                    if (GUILayout.Button("Export"))
+                    if (GUILayout.Button("Export Scene", GUILayout.Height(30f)))
                     {
                         state = State.PRE_EXPORT;
-                        Export(false);
+                        Export(false, true);
                     }
+                    if (Selection.activeGameObject == null)
+                        GUI.enabled = false;
+                    if (GUILayout.Button("Export Selected", GUILayout.Height(30f)))
+                    {
+                        state = State.PRE_EXPORT;
+                        Export(false,false);
+                    }
+                    GUI.enabled = true;
                 } else {
                     EditorGUILayout.HelpBox("Please select an output directory", MessageType.Warning);
                 }
+
+                GUILayout.Space(8);
+                EditorGUILayout.BeginHorizontal();
+                if (GUILayout.Button("Refresh Settings", GUILayout.Height(30f), GUILayout.MinWidth(100f)))
+                {
+                    PipelineSettings.ReadSettingsFromConfig();
+                }
+                if (GUILayout.Button("Save Settings", GUILayout.Height(30f), GUILayout.MinWidth(100f)))
+                {
+                    PipelineSettings.SaveSettings();
+                }
+                EditorGUILayout.EndHorizontal();
                 break;
 
 
@@ -467,9 +487,6 @@ public class ExportScene : EditorWindow
         {
             light.gameObject.SetActive(false);
         }
-        UnityEngine.Debug.Log("HERE");
-        UnityEngine.Debug.Log(realtimeLights);
-        UnityEngine.Debug.Log(realtimeLights.Length);
     }
 
     public void CleanupRealtimeLights()
@@ -680,11 +697,9 @@ public class ExportScene : EditorWindow
 
     private void SerializeMaterials(IEnumerable<Renderer> renderers, bool savePersistent = false)
     {
-        UnityEngine.Debug.LogWarning("serialize");
         matRegistry = matRegistry != null ? matRegistry : new Dictionary<string, Material>();
         matLinks = matLinks != null ? matLinks : new Dictionary<Material, Material>();
         texLinks = texLinks != null ? texLinks : new Dictionary<Texture2D, Texture2D>();
-        UnityEngine.Debug.Log(renderers.Count());
         var mats = renderers
             .SelectMany((rend) => rend.sharedMaterials
             .Select((mat) => new MatRend(mat, rend)))
@@ -748,8 +763,6 @@ public class ExportScene : EditorWindow
             if (updates != null)
                 foreach (var update in updates)
                 {
-                    UnityEngine.Debug.LogWarning("herer");
-                    UnityEngine.Debug.Log(update);
                     update.Key.sharedMaterials = update.Value;
                 }
         }
@@ -771,7 +784,6 @@ public class ExportScene : EditorWindow
         HashSet<Material> toRemove = new HashSet<Material>();
         foreach (var renderer in renderers)
         {
-            UnityEngine.Debug.Log(renderer.gameObject.name);
             renderer.sharedMaterials = renderer.sharedMaterials.Select
             (
                 (mat) =>
@@ -838,8 +850,10 @@ public class ExportScene : EditorWindow
                 (renderer.sharedMaterial.mainTextureOffset != Vector2.one ||
                     renderer.sharedMaterial.mainTextureScale != Vector2.one);
             int lightIdx = hasLightmap ? renderer.lightmapIndex : -2;
+            // Random value required: Every mesh with lightmap must have its own mesh instance, cant share the same source mesh.
+            int randVal = hasLightmap ? UnityEngine.Random.Range(0,999999) : 0;
             Vector2 txrOffset = hasTxrOffset ? renderer.sharedMaterial.mainTextureOffset : Vector2.negativeInfinity;
-            registryID = String.Format("%d_%f_%f", lightIdx, txrOffset.x, txrOffset.y);
+            registryID = String.Format("%d_%f_%f", lightIdx, txrOffset.x, txrOffset.y) + randVal.ToString();
         }
     }
 
@@ -849,8 +863,9 @@ public class ExportScene : EditorWindow
         glRegistry = glRegistry != null ? glRegistry : new Dictionary<MeshRegistryKey, Mesh>();
 
         var regKey = new MeshRegistryKey(mesh, renderer);
-        if(glRegistry.ContainsKey(regKey))
+        if (glRegistry.ContainsKey(regKey))
         {
+            UnityEngine.Debug.Log("contains");
             return glRegistry[regKey];
         }
 
@@ -874,6 +889,10 @@ public class ExportScene : EditorWindow
         var renderers = Renderers.Where((renderer) => renderer.gameObject.activeInHierarchy && renderer.enabled);
         foreach(var renderer in renderers)
         {
+            UnityEngine.Debug.LogWarning("here materials");
+            UnityEngine.Debug.Log(renderer.sharedMaterial);
+            UnityEngine.Debug.Log(renderer.sharedMaterial.name);
+            UnityEngine.Debug.Log(renderer.sharedMaterials.Length);
             bool isSkinned = renderer.GetType() == typeof(SkinnedMeshRenderer);
             Mesh mesh = null;
             if (isSkinned)
@@ -891,7 +910,7 @@ public class ExportScene : EditorWindow
             bool hasLightmap = WebaUnity.HasLightmap(renderer);
             bool hasTxrOffset = renderer.sharedMaterial != null && 
                 (renderer.sharedMaterial.mainTextureOffset != Vector2.one ||
-                    renderer.sharedMaterial.mainTextureScale != Vector2.one);
+                    renderer.sharedMaterial.mainTextureScale != Vector2.one );
             
             if ((hasLightmap && PipelineSettings.lightmapMode == LightmapMode.BAKE_SEPARATE) ||
                     hasTxrOffset ||
@@ -899,13 +918,31 @@ public class ExportScene : EditorWindow
             {
 
                 var nuMesh = GenerateMesh(renderer, mesh, savePersistent);
-
+                UnityEngine.Debug.Log(nuMesh);
+                
                 if (hasLightmap)
                 {
+
                     
+                    UnityEngine.Debug.Log("has lightmap");
+
+                    //var nuUv2s = nuMesh.uv2.Select((uv2) => uv2 * new Vector2(off.x, off.y) + new Vector2(off.z, off.w)).ToArray();
+                    // var nuUv2s = nuMesh.uv2.Select((uv2) => new Vector2(uv2.x,1-uv2.y) * new Vector2(-off.x, -off.y) + new Vector2(off.z, off.w)).ToArray();
+                    //var nuUv2s = nuMesh.uv2.Select((uv2) => new Vector2(1f-uv2.x, 1f-uv2.y));.ToArray();
                     var off = renderer.lightmapScaleOffset;
-                    var nuUv2s = nuMesh.uv2.Select((uv2) => uv2 * new Vector2(off.x, off.y) + new Vector2(off.z, off.w)).ToArray();
-                    nuMesh.uv2 = nuUv2s;
+                    Vector2[] nuvs2 = new Vector2[nuMesh.uv2.Length];
+                    for (int i = 0; i < nuvs2.Length; i++)
+                    {
+                        float valx = nuMesh.uv2[i].x;
+                        float valy = nuMesh.uv2[i].y;
+
+                        valx = (valx * off.x) + off.z;
+                        //valy = (-(valy * off.y) - off.w) + 1f; // IN GLTF UVS IN Y AR INVERSED, THEY GO FROM LEFT TOP CORNER TO BOTTOM RIGHT CORNER, Y MUST BE INVERSED
+                        valy = (valy * off.y) + off.w; // IN GLTF UVS IN Y AR INVERSED, THEY GO FROM LEFT TOP CORNER TO BOTTOM RIGHT CORNER, Y MUST BE INVERSED
+
+                        nuvs2[i] = new Vector2(valx, valy);
+                    }
+                    nuMesh.uv2 = nuvs2;
                     nuMesh.UploadMeshData(false);
                 }
 
@@ -1144,11 +1181,11 @@ public class ExportScene : EditorWindow
 
 #endregion
 
-    private void Export(bool savePersistent)
+    private void Export(bool savePersistent, bool fullScene = true)
     {
-        ExportSequence(savePersistent);
+        ExportSequence(savePersistent, fullScene);
     }
-    private void ExportSequence(bool savePersistent)
+    private void ExportSequence(bool savePersistent, bool fullScene = true)
     {
         // FOLDER SETUP
         // DEV
@@ -1212,7 +1249,7 @@ public class ExportScene : EditorWindow
 
         try
         {
-            exporter.Export();
+            exporter.Export(fullScene);
         } catch (System.NullReferenceException e)
         {
             UnityEngine.Debug.LogError("export error:" + e);

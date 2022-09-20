@@ -185,9 +185,16 @@ public class StandardToWebaPBR : MonoBehaviour
     {
         foreach(var material in backups.Keys)
         {
-            Material backup = AssetDatabase.LoadAssetAtPath<Material>(backups[material]);
-            material.shader = backup.shader;
-            material.CopyPropertiesFromMaterial(backup);
+            //if (AssetDatabase.GetAssetPath(material).StartsWith("Resources"))
+            //{
+
+            //}
+            //else
+            //{
+                Material backup = AssetDatabase.LoadAssetAtPath<Material>(backups[material]);
+                material.shader = backup.shader;
+                material.CopyPropertiesFromMaterial(backup);
+            //}
         }
         /*
         var renderers = FindObjectsOfType<Renderer>();
@@ -207,22 +214,27 @@ public class StandardToWebaPBR : MonoBehaviour
     {
 
         var origPath = AssetDatabase.GetAssetPath(material);
-        
-            
-        
-        var fname = Path.GetFileNameWithoutExtension(origPath) + "_" + material.name;
-        var dir = Path.GetDirectoryName(origPath) + "/bak";
-
-        if (!Directory.Exists(dir))
+        if (origPath.StartsWith("Resources"))//builtin material
         {
-            Directory.CreateDirectory(dir);
+            backups[material] = CreateBuiltinMaterial(material);
         }
-        Material nuMat = new Material(material);
+        else
+        {
 
-        string nuPath = dir + "/" + fname + "_bak";
-        SaveMaterial(nuMat, nuPath);
+            var fname = Path.GetFileNameWithoutExtension(origPath) + "_" + material.name;
+            var dir = Path.GetDirectoryName(origPath) + "/bak";
 
-        backups[material] = nuPath + ".mat";
+            if (!Directory.Exists(dir))
+            {
+                Directory.CreateDirectory(dir);
+            }
+            Material nuMat = new Material(material);
+
+            string nuPath = dir + "/" + fname + "_bak";
+            SaveMaterial(nuMat, nuPath);
+
+            backups[material] = nuPath + ".mat";
+        }
     }
 
     
@@ -464,16 +476,50 @@ public class StandardToWebaPBR : MonoBehaviour
 
         return tex;
     }
-
+    private static string CreateBuiltinMaterial(Material material)
+    {
+        PipelineSettings.CreateBuiltinFolder();
+        string assetPath = Path.Combine("Assets" + PipelineSettings.BuiltinAssetsFolder, "builtin");
+        string fullPath = Path.Combine(Application.dataPath + PipelineSettings.BuiltinAssetsFolder, "builtin");
+        Debug.Log(fullPath);
+        if (!File.Exists(fullPath + ".mat"))
+        {
+            Debug.Log("Material does not exists, creating");
+            Debug.Log(assetPath + ".mat");
+            Material nuMat = new Material(material);
+            AssetDatabase.CreateAsset(nuMat, assetPath + ".mat");
+        }
+        return assetPath+".mat";
+    }
     private static void SaveMaterial(Material material, string path)
     {
-        if (File.Exists(path))
-        {
-            File.Delete(path);
-            File.Delete(path + ".meta");
-            AssetDatabase.Refresh();
-        }
-        AssetDatabase.CreateAsset(material, path + ".mat");
+        //if (path.StartsWith("Resources"))
+        //{
+        //    // WILL SAVE A SIMPLE MATERIAL THAT WILL ALWAYS BE USED WHEN BUILTIN IS PRESENT
+        //    if (!Directory.Exists(Application.dataPath + PipelineSettings.BuiltinAssetsFolder))
+        //    {
+        //        Directory.CreateDirectory(Application.dataPath + PipelineSettings.BuiltinAssetsFolder);
+        //        AssetDatabase.Refresh();
+        //    }
+        //    string assetPath = Path.Combine("Assets" + PipelineSettings.BuiltinAssetsFolder, "builtin");
+        //    string fullPath = Path.Combine(Application.dataPath + PipelineSettings.BuiltinAssetsFolder, "builtin");
+        //    if (!File.Exists(fullPath + ".mat"))
+        //    {
+        //        Debug.Log("Material does not exists, creating");
+        //        AssetDatabase.CreateAsset(material, assetPath + ".mat");
+        //    }
+        //}
+        //else
+        //{
+            //Debug.Log(path);
+            if (File.Exists(path))
+            {
+                File.Delete(path);
+                File.Delete(path + ".meta");
+                AssetDatabase.Refresh();
+            }
+            AssetDatabase.CreateAsset(material, path + ".mat");
+        //}
     }
 
 }
