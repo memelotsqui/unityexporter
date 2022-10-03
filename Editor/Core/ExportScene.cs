@@ -101,10 +101,12 @@ public class ExportScene : EditorWindow
                 PipelineSettings.ExportColliders = EditorGUILayout.Toggle("Colliders", PipelineSettings.ExportColliders);
                 PipelineSettings.ExportSkybox = EditorGUILayout.Toggle("Skybox", PipelineSettings.ExportSkybox);
                 PipelineSettings.ExportEnvmap = EditorGUILayout.Toggle("Envmap", PipelineSettings.ExportEnvmap);
-                GUI.enabled = true;
+                
                 GUILayout.Space(8);
                 PipelineSettings.meshMode = (MeshExportMode)EditorGUILayout.EnumPopup("Mesh Export Options", PipelineSettings.meshMode);
                 PipelineSettings.lightmapMode = (LightmapMode)EditorGUILayout.EnumPopup("Lightmap Mode", PipelineSettings.lightmapMode);
+                GUI.enabled = true;
+                //PipelineSettings.lightmapMode = LightmapMode.BAKE_SEPARATE;
                 // Add a label to indication that the BAKE_SEPARATE lightmap mode will export MOZ_lightmap extension
                 if (PipelineSettings.lightmapMode != LightmapMode.BAKE_SEPARATE)
                 {
@@ -1365,7 +1367,7 @@ public class ExportScene : EditorWindow
             SceneObjectContent content = new SceneObjectContent();
             lightObject.content = content;
 
-            content.lightType = light.type.ToString();
+            content.lightType = light.type.ToString().ToLower();
 
             // Set color
             content.args = "[[" + MathF.Floor(light.color.r * 255) + ", " +
